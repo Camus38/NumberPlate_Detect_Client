@@ -4,6 +4,9 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.SystemClock
 import android.util.Log
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.io.*
 import java.net.InetSocketAddress
 import java.net.Socket
@@ -21,38 +24,51 @@ class Send {
     lateinit var buffer : ByteArray
 
     fun connect(ip:String,Port: Int){
-        socket = Socket()
-        socket.connect(InetSocketAddress(ip,Port))//서버에 연결 요청
+        try {
+            socket = Socket()
+            socket.connect(InetSocketAddress(ip,Port))//서버에 연결 요청
 
-        input = socket.getInputStream()
-        dis = DataInputStream(input)
+            input = socket.getInputStream()
+            dis = DataInputStream(input)
 
-        output = socket.getOutputStream()
-        dos = DataOutputStream(output)
+            output = socket.getOutputStream()
+            dos = DataOutputStream(output)
+        }catch (e : Exception){
+            e.printStackTrace()
+            println("Connect error")
+        }
 
     }
 
     fun send(){
-        var data =getImageByteArray(readImage.setImage(0))
-        var b = ByteBuffer.allocate(4)
-        b.order(ByteOrder.LITTLE_ENDIAN)
-        b.putInt(data.size)
+        CoroutineScope(Dispatchers.IO).launch {
+            var data =getImageByteArray(readImage.setImage(1))
+            var b = ByteBuffer.allocate(4)
+            b.order(ByteOrder.LITTLE_ENDIAN)
+            b.putInt(data.size)
+            //dos.flush()
+            try{
+                dos.write(b.array(),0,4)
+                dos.flush()
+                dos.write(data,0,data.size)
 
-        dos.write(b.array(),0,4)
-        dos.flush()
+            }catch (e : IOException){
+                e.printStackTrace()
+            }
 
-        dos.write(data,0,data.size)
-        dos.flush()
+        }
 
     }
     fun sends(){
-        var str = "test"
+        var str = "Hi There"
         output.write(str.toByteArray())
-        output.flush()
+        //output.flush()
     }
     fun disconnet(){
         dos.writeInt(0)
         dos.flush()
+
+        socket.close()
     }
 
     fun recv() : Bitmap{
@@ -78,7 +94,8 @@ class Send {
     fun recvnum() : String{
         var num = ""
         var buf = ByteArray(1024)
-        if(input.available() > 0){
+        var available = input.available()
+        if(available > 0){
             var size = input.read(buf)
             num = String(buf,0,size)
         }

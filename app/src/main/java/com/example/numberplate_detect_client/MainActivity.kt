@@ -13,10 +13,10 @@ import java.util.*
 
 
 class MainActivity : AppCompatActivity() {
-    var ip = "35.216.104.58"
-    var port = 4000
+    var ip = "192.168.148.128"
+    var port = 30000
     val binding by lazy { ActivityMainBinding.inflate(layoutInflater) }
-
+    var send = Send();
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
